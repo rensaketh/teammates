@@ -14,7 +14,6 @@ import teammates.common.datatransfer.AttributesDeletionQuery;
 import teammates.common.datatransfer.CourseRoster;
 import teammates.common.datatransfer.FeedbackParticipantType;
 import teammates.common.datatransfer.attributes.FeedbackQuestionAttributes;
-import teammates.common.datatransfer.attributes.FeedbackResponseAttributes;
 import teammates.common.datatransfer.attributes.FeedbackSessionAttributes;
 import teammates.common.datatransfer.attributes.InstructorAttributes;
 import teammates.common.datatransfer.attributes.StudentAttributes;
@@ -599,35 +598,6 @@ public class FeedbackQuestionsLogicTest extends BaseLogicTest {
 
         // other questions not get affected
         assertNotNull(getQuestionFromDatastore("qn3InSession1InCourse1"));
-    }
-
-    @Test
-    public void testDeleteFeedbackQuestionCascade_cascadeDeleteResponseOfStudent_shouldUpdateRespondents() throws Exception {
-        FeedbackResponseAttributes fra = dataBundle.feedbackResponses.get("response1ForQ1S1C1");
-        FeedbackQuestionAttributes fqa =
-                fqLogic.getFeedbackQuestion(fra.feedbackSessionName, fra.courseId, Integer.parseInt(fra.feedbackQuestionId));
-        FeedbackResponseAttributes responseInDb = frLogic.getFeedbackResponse(fqa.getId(), fra.giver, fra.recipient);
-        assertNotNull(responseInDb);
-
-        // the student only gives this response for the session
-        assertEquals(1, frLogic.getFeedbackResponsesFromGiverForCourse(responseInDb.courseId, responseInDb.giver).stream()
-                .filter(response -> response.feedbackSessionName.equals(responseInDb.feedbackSessionName))
-                .count());
-        // suppose he is in the respondents list
-        fsLogic.addStudentRespondent(responseInDb.giver, responseInDb.feedbackSessionName, responseInDb.courseId);
-        FeedbackSessionAttributes correspondingSession =
-                fsLogic.getFeedbackSession(responseInDb.feedbackSessionName, responseInDb.courseId);
-        assertTrue(correspondingSession.getRespondingStudentList().contains(responseInDb.giver));
-
-        // after deletion the question
-        fqLogic.deleteFeedbackQuestionCascade(responseInDb.feedbackQuestionId);
-
-        FeedbackSessionAttributes sessionAfter =
-                fsLogic.getFeedbackSession(responseInDb.feedbackSessionName, responseInDb.courseId);
-        // instructor respondents will not change
-        assertEquals(correspondingSession.getRespondingInstructorList(), sessionAfter.getRespondingInstructorList());
-        // the student should not in the respondents
-        assertFalse(sessionAfter.getRespondingStudentList().contains(responseInDb.giver));
     }
 
     @Test
